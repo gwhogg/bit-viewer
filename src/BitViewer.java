@@ -1,5 +1,8 @@
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Map;
 
 import javax.swing.*;
@@ -10,6 +13,8 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 
 
 public class BitViewer {
+
+    private byte[] fileBytes = new byte[1];
 
     public class BitsPanel extends JPanel {
 
@@ -46,7 +51,7 @@ public class BitViewer {
                 gbc.gridy = r;
                 for (int c = 0; c < columns; c++) {
                     if (displayType == DisplayType.HEX && c % 2 == 0) {
-                        if (c == remainder) {
+                        if (r == rows - 1 && remainder != 0 && c == remainder) {
                             break;
                         }
                         continue;
@@ -142,11 +147,7 @@ public class BitViewer {
     }
 
     private BitViewer() {
-        byte[] bytes = "George is awesome!".getBytes();
-
         JFrame frame = new JFrame("Bit Viewer");
-        JScrollPane scrPane = new JScrollPane(new BitsPanel(bytes, DisplayType.BLOCK));
-        frame.getContentPane().add(scrPane);
         frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
         frame.pack();
         frame.setLocationRelativeTo(null);
@@ -154,20 +155,47 @@ public class BitViewer {
         final JPanel ButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         ButtonPanel.setLayout(new BorderLayout());
 
+        JButton btnLoadFile = new JButton("LOAD FILE");
+        btnLoadFile.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.showOpenDialog(frame);
+
+            try {
+                Component[] components = frame.getContentPane().getComponents();
+                for (Component component : components) {
+                    if (component instanceof JScrollPane) {
+                        frame.remove(component);
+                    }
+                }
+
+                File file = fileChooser.getSelectedFile();
+                fileBytes = Files.readAllBytes(file.toPath());
+                JScrollPane scrPane = new JScrollPane(new BitsPanel(fileBytes, DisplayType.ASCII));
+                frame.getContentPane().add(scrPane);
+                frame.revalidate();
+                frame.repaint();
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        ButtonPanel.add(btnLoadFile);
+
         JButton btnAsciiZoom = new JButton("X.");
-        btnAsciiZoom.addActionListener(generateActionListener(frame, bytes, DisplayType.ASCII));
+        btnAsciiZoom.addActionListener(generateActionListener(frame, DisplayType.ASCII));
         ButtonPanel.add(btnAsciiZoom);
 
         JButton btnBinary = new JButton("10");
-        btnBinary.addActionListener(generateActionListener(frame, bytes, DisplayType.BINARY));
+        btnBinary.addActionListener(generateActionListener(frame, DisplayType.BINARY));
         ButtonPanel.add(btnBinary);
 
         JButton btnBlock = new JButton("BLOCK");
-        btnBlock.addActionListener(generateActionListener(frame, bytes, DisplayType.BLOCK));
+        btnBlock.addActionListener(generateActionListener(frame, DisplayType.BLOCK));
         ButtonPanel.add(btnBlock);
 
         JButton btnHex = new JButton("0x");
-        btnHex.addActionListener(generateActionListener(frame, bytes, DisplayType.HEX));
+        btnHex.addActionListener(generateActionListener(frame, DisplayType.HEX));
         ButtonPanel.add(btnHex);
 
         Border LineBorder = new LineBorder(Color.lightGray);
@@ -180,9 +208,11 @@ public class BitViewer {
 
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setVisible(true);
+
+        btnLoadFile.doClick();
     }
 
-    private ActionListener generateActionListener(JFrame frame, byte[] bytes, DisplayType displayType) {
+    private ActionListener generateActionListener(JFrame frame, DisplayType displayType) {
         return e -> {
             Component[] components = frame.getContentPane().getComponents();
             for (Component component : components) {
@@ -191,7 +221,7 @@ public class BitViewer {
                 }
             }
 
-            JScrollPane scrPane = new JScrollPane(new BitsPanel(bytes, displayType));
+            JScrollPane scrPane = new JScrollPane(new BitsPanel(fileBytes, displayType));
             frame.getContentPane().add(scrPane);
             frame.revalidate();
             frame.repaint();
