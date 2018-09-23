@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.util.Map;
 
 import javax.swing.*;
@@ -152,13 +153,21 @@ public class BitViewer {
 
         final JPanel ButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         ButtonPanel.setLayout(new BorderLayout());
+
         JButton btnAsciiZoom = new JButton("X.");
+        btnAsciiZoom.addActionListener(generateActionListener(frame, bytes, DisplayType.ASCII));
         ButtonPanel.add(btnAsciiZoom);
+
         JButton btnBinary = new JButton("10");
+        btnBinary.addActionListener(generateActionListener(frame, bytes, DisplayType.BINARY));
         ButtonPanel.add(btnBinary);
+
         JButton btnBlock = new JButton("BLOCK");
+        btnBlock.addActionListener(generateActionListener(frame, bytes, DisplayType.BLOCK));
         ButtonPanel.add(btnBlock);
+
         JButton btnHex = new JButton("0x");
+        btnHex.addActionListener(generateActionListener(frame, bytes, DisplayType.HEX));
         ButtonPanel.add(btnHex);
 
         Border LineBorder = new LineBorder(Color.lightGray);
@@ -171,6 +180,22 @@ public class BitViewer {
 
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setVisible(true);
+    }
+
+    private ActionListener generateActionListener(JFrame frame, byte[] bytes, DisplayType displayType) {
+        return e -> {
+            Component[] components = frame.getContentPane().getComponents();
+            for (Component component : components) {
+                if (component instanceof JScrollPane) {
+                    frame.remove(component);
+                }
+            }
+
+            JScrollPane scrPane = new JScrollPane(new BitsPanel(bytes, displayType));
+            frame.getContentPane().add(scrPane);
+            frame.revalidate();
+            frame.repaint();
+        };
     }
 
 }
